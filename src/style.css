@@ -47,16 +47,14 @@ header {
     flex-direction: row;
     background-color: #3f593d;
     width: 100%;
-    padding: 15;
+    padding: 15px;
     justify-content: center;
     align-items: center;
 }
 
 .Logo {
-    position: flex;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
+    height: 80px;
+    width: auto;
 }
 
 nav {
@@ -593,4 +591,290 @@ div.icon-cart {
     width: 50%;
     background-color: rgb(228, 255, 155);
     border-color: #D9EDB5;
+}
+
+/* ═══════════════════════════════════════════════
+   ASSORTIMENT – filter bar, kaarten, paginering
+═══════════════════════════════════════════════ */
+
+/* Meer ruimte: override de 20%-padding van .container */
+.assortment-page .container {
+    padding: 0 20px;
+}
+
+/* ── Filter bar (witte kaart, horizontale rij) ── */
+.filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 16px;
+    align-items: flex-end;
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e0ebd4;
+}
+
+/* Elk label + control paar */
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.field label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #3f593d;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+.field select,
+.field input[type="text"] {
+    border: 1.5px solid #d0dfc8;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 14px;
+    font-family: inherit;
+    background: #f8faf5;
+    color: #213322;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+    cursor: pointer;
+    min-width: 148px;
+}
+
+.field input[type="text"] {
+    min-width: 190px;
+}
+
+.field select:focus,
+.field input[type="text"]:focus {
+    border-color: #3f593d;
+    background: #ffffff;
+}
+
+/* ── Toggle schakelaar ── */
+.toggle-field {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding-bottom: 4px;
+}
+
+.toggle-field > label:last-child {
+    font-size: 14px;
+    cursor: pointer;
+    color: #213322;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 42px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    inset: 0;
+    background-color: #c8d9be;
+    border-radius: 999px;
+    transition: background-color 0.2s;
+    cursor: pointer;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 3px;
+    top: 3px;
+    background: #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: #3f593d;
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(18px);
+}
+
+/* ── Toepassen knop ── */
+.filter-bar button[type="submit"] {
+    border: none;
+    border-radius: 999px;
+    padding: 10px 26px;
+    font-size: 14px;
+    font-weight: 700;
+    background-color: #3f593d;
+    color: #ffffff;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    letter-spacing: 0.3px;
+    align-self: flex-end;
+    margin-bottom: 4px;
+    white-space: nowrap;
+}
+
+.filter-bar button[type="submit"]:hover {
+    background-color: #283e24;
+    transform: translateY(-1px);
+}
+
+/* ── Resultateninfo ── */
+.resultaten-info {
+    font-size: 13px;
+    color: #667766;
+    margin-bottom: 18px;
+}
+
+/* ── Geen resultaten ── */
+.geen-resultaten {
+    grid-column: 1 / -1;
+    color: #667766;
+    padding: 1.5rem 0;
+    font-size: 15px;
+}
+
+/* ── Plant caption: naam + prijs + knop netjes onder elkaar ── */
+.assortment-caption {
+    align-items: center;
+}
+
+.plant-naam {
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.plant-prijs {
+    font-size: 13px;
+    color: #3f593d;
+    font-weight: 600;
+}
+
+/* ── + Winkelmandje-knop (breed) ── */
+.add-to-cart-btn {
+    margin-top: 10px;
+    width: 100%;
+    border: none;
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-size: 15px;
+    font-weight: 600;
+    background-color: #d2e394;
+    color: #213322;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.add-to-cart-btn:hover:not(:disabled) {
+    background-color: #bdd67e;
+    transform: translateY(-1px);
+}
+
+.add-to-cart-btn:disabled {
+    background-color: #d8d8c8;
+    color: #999;
+    cursor: not-allowed;
+}
+
+/* ── Uitverkocht ── */
+.assortment-item.uitverkocht {
+    opacity: 0.6;
+}
+
+.uitverkocht-badge {
+    display: inline-block;
+    background-color: #b94040;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    margin-bottom: 6px;
+}
+
+/* ── Hover op plantkaart ── */
+.assortment-item {
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.assortment-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
+}
+
+/* ── Paginering ── */
+.paginering {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 36px;
+    padding-top: 18px;
+    border-top: 1px solid #d5e5c0;
+    font-size: 14px;
+}
+
+.paginering a {
+    display: inline-block;
+    padding: 9px 22px;
+    border-radius: 999px;
+    background-color: #3f593d;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 13px;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.paginering a:hover {
+    background-color: #283e24;
+    transform: translateY(-1px);
+}
+
+.paginering span {
+    color: #667766;
+}
+
+/* ── Contact-labels in footer ── */
+.contact-label {
+    display: inline-block;
+    width: 68px;
+    font-weight: 700;
+    color: #b8d4a0;
+}
+
+/* ── Responsive: filter bar stapt op smal scherm ── */
+@media (max-width: 700px) {
+    .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .field select,
+    .field input[type="text"] {
+        min-width: unset;
+        width: 100%;
+    }
+
+    .filter-bar button[type="submit"] {
+        width: 100%;
+    }
 }

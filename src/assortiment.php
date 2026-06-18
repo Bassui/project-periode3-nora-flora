@@ -12,8 +12,7 @@ if (!in_array($per_pagina, $per_pagina_opties, true)) $per_pagina = 20;
 $pagina = max(1, (int)($_GET['pagina'] ?? 1));
 
 /* ─────────────────────────────────────────────
-   Sorteer-whitelist — velden met eigen filter-
-   dropdown zijn hier NIET opgenomen
+   Sorteer-whitelist
 ───────────────────────────────────────────── */
 $sorteer_opties = [
     'naam_asc'      => ['naam',                 'ASC',  'Naam (A–Z)'],
@@ -55,6 +54,7 @@ $kleuren        = distinct($conn, 'kleur');
 /* ─────────────────────────────────────────────
    Actieve filters lezen
 ───────────────────────────────────────────── */
+$zoekterm             = trim($_GET['zoekterm']       ?? '');
 $standplaats_filter   = trim($_GET['standplaats']    ?? '');
 $waterbehoefte_filter = trim($_GET['waterbehoefte']  ?? '');
 $lichtbehoefte_filter = trim($_GET['lichtbehoefte']  ?? '');
@@ -69,7 +69,8 @@ $where_parts = [];
 $bind_values = [];
 $bind_types  = '';
 
-if ($verberg_uitverkocht)        { $where_parts[] = 'voorraad > 0'; }
+if ($verberg_uitverkocht)         { $where_parts[] = 'voorraad > 0'; }
+if ($zoekterm !== '')             { $where_parts[] = 'naam LIKE ?';        $bind_values[] = '%' . $zoekterm . '%'; $bind_types .= 's'; }
 if ($standplaats_filter   !== '') { $where_parts[] = 'standplaats = ?';   $bind_values[] = $standplaats_filter;   $bind_types .= 's'; }
 if ($waterbehoefte_filter !== '') { $where_parts[] = 'waterbehoefte = ?'; $bind_values[] = $waterbehoefte_filter; $bind_types .= 's'; }
 if ($lichtbehoefte_filter !== '') { $where_parts[] = 'lichtbehoefte = ?'; $bind_values[] = $lichtbehoefte_filter; $bind_types .= 's'; }
@@ -127,9 +128,6 @@ function page_url(int $p): string {
     $q['pagina'] = $p;
     return '?' . http_build_query(array_filter($q, fn($v) => $v !== ''));
 }
-
-
-
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -140,6 +138,120 @@ function page_url(int $p): string {
     <link rel="stylesheet" href="style.css">
     <script src="script.js" defer></script>
     <title>Assortiment – Nora's Flora</title>
+    <style>
+        /* ── Bugfix: header padding had geen eenheid ── */
+        header { padding: 15px; }
+
+        /* ── Bugfix: position:flex is ongeldig ── */
+        .Logo { height: 80px; width: auto; position: static; }
+
+        /* ── Meer ruimte op assortiment-pagina ── */
+        .assortment-page .container { padding: 0 20px; }
+
+        /* ── Filter bar ── */
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 16px;
+            align-items: flex-end;
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            border: 1px solid #e0ebd4;
+        }
+        .field { display: flex; flex-direction: column; gap: 5px; }
+        .field label {
+            font-size: 11px; font-weight: 700; color: #3f593d;
+            text-transform: uppercase; letter-spacing: 0.6px;
+        }
+        .field select, .field input[type="text"] {
+            border: 1.5px solid #d0dfc8; border-radius: 8px;
+            padding: 8px 10px; font-size: 14px; font-family: inherit;
+            background: #f8faf5; color: #213322; outline: none;
+            transition: border-color 0.15s; cursor: pointer; min-width: 148px;
+        }
+        .field input[type="text"] { min-width: 190px; }
+        .field select:focus, .field input[type="text"]:focus {
+            border-color: #3f593d; background: #ffffff;
+        }
+
+        /* ── Toggle schakelaar ── */
+        .toggle-field { display: flex; align-items: center; gap: 9px; padding-bottom: 4px; }
+        .toggle-field > label:last-child { font-size: 14px; cursor: pointer; }
+        .toggle-switch { position: relative; display: inline-block; width: 42px; height: 24px; flex-shrink: 0; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute; inset: 0; background-color: #c8d9be;
+            border-radius: 999px; transition: background-color 0.2s; cursor: pointer;
+        }
+        .toggle-slider::before {
+            content: ''; position: absolute; width: 18px; height: 18px;
+            left: 3px; top: 3px; background: #fff; border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: transform 0.2s;
+        }
+        .toggle-switch input:checked + .toggle-slider { background-color: #3f593d; }
+        .toggle-switch input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+        /* ── Toepassen knop ── */
+        .filter-bar button[type="submit"] {
+            border: none; border-radius: 999px; padding: 10px 26px;
+            font-size: 14px; font-weight: 700; background-color: #3f593d;
+            color: #ffffff; cursor: pointer; align-self: flex-end;
+            transition: background-color 0.2s, transform 0.1s; white-space: nowrap;
+        }
+        .filter-bar button[type="submit"]:hover { background-color: #283e24; transform: translateY(-1px); }
+
+        /* ── Resultateninfo & lege staat ── */
+        .resultaten-info { font-size: 13px; color: #667766; margin-bottom: 18px; }
+        .geen-resultaten { grid-column: 1/-1; color: #667766; padding: 1.5rem 0; }
+
+        /* ── Plant caption ── */
+        .assortment-caption { align-items: center; }
+        .plant-naam { font-weight: 600; font-size: 13px; }
+        .plant-prijs { font-size: 13px; color: #3f593d; font-weight: 600; }
+
+        /* ── + knop ── */
+        .add-to-cart-btn {
+            margin-top: 8px; border: none; border-radius: 50%;
+            width: 34px; height: 34px; background-color: #3f593d; color: #fff;
+            font-size: 22px; line-height: 1; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            align-self: center; transition: background-color 0.2s, transform 0.15s;
+        }
+        .add-to-cart-btn:hover:not(:disabled) { background-color: #283e24; transform: scale(1.12); }
+        .add-to-cart-btn:disabled { background-color: #c8c8b8; cursor: not-allowed; }
+
+        /* ── Uitverkocht ── */
+        .assortment-item.uitverkocht { opacity: 0.6; }
+        .uitverkocht-badge {
+            display: inline-block; background-color: #b94040; color: #fff;
+            font-size: 10px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.8px; padding: 3px 9px; border-radius: 999px; margin-bottom: 6px;
+        }
+
+        /* ── Hover op kaartje ── */
+        .assortment-item { transition: transform 0.15s, box-shadow 0.15s; }
+        .assortment-item:hover { transform: translateY(-3px); box-shadow: 0 8px 18px rgba(0,0,0,0.15); }
+
+        /* ── Paginering ── */
+        .paginering {
+            display: flex; align-items: center; justify-content: center;
+            gap: 16px; margin-top: 36px; padding-top: 18px;
+            border-top: 1px solid #d5e5c0; font-size: 14px;
+        }
+        .paginering a {
+            display: inline-block; padding: 9px 22px; border-radius: 999px;
+            background-color: #3f593d; color: #fff; font-weight: 700; font-size: 13px;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .paginering a:hover { background-color: #283e24; transform: translateY(-1px); }
+        .paginering span { color: #667766; }
+
+        /* ── Contact labels footer ── */
+        .contact-label { display: inline-block; width: 68px; font-weight: 700; color: #b8d4a0; }
+    </style>
 </head>
 
 <body>
@@ -169,8 +281,17 @@ function page_url(int $p): string {
     <div class="assortment-page">
         <div class="container">
 
-            <!-- ── Filter + Sorteer formulier (GET zodat paginering-links werken) ── -->
+            <!-- ── Filter + Sorteer + Zoek formulier ── -->
             <form method="GET" class="filter-bar">
+
+                <div class="field">
+                    <label for="zoekterm">Zoeken</label>
+                    <input type="text"
+                           name="zoekterm"
+                           id="zoekterm"
+                           placeholder="Zoek planten..."
+                           value="<?= htmlspecialchars($zoekterm) ?>">
+                </div>
 
                 <div class="field">
                     <label for="standplaats">Standplaats</label>
@@ -261,7 +382,6 @@ function page_url(int $p): string {
                     </select>
                 </div>
 
-                
                 <div class="toggle-field">
                     <label class="toggle-switch" for="verberg_uitverkocht">
                         <input type="checkbox"
@@ -276,14 +396,6 @@ function page_url(int $p): string {
 
                 <button type="submit">Toepassen</button>
 
-                
-
-            </form>
-
-            <form> 
-                <div class="field">
-                <input type="text" name="zoekterm" id="zoekterm" placeholder="Zoek planten...">
-                </div>
             </form>
 
             <!-- ── Resultateninfo ── -->
@@ -291,6 +403,7 @@ function page_url(int $p): string {
                 <?= $totaal ?> plant<?= $totaal !== 1 ? 'en' : '' ?> gevonden
                 <?php
                     $actief = [];
+                    if ($zoekterm             !== '') $actief[] = 'Zoekterm: <strong>'     . htmlspecialchars($zoekterm)             . '</strong>';
                     if ($standplaats_filter   !== '') $actief[] = 'Standplaats: <strong>'  . htmlspecialchars($standplaats_filter)   . '</strong>';
                     if ($waterbehoefte_filter !== '') $actief[] = 'Water: <strong>'         . htmlspecialchars($waterbehoefte_filter) . '</strong>';
                     if ($lichtbehoefte_filter !== '') $actief[] = 'Licht: <strong>'         . htmlspecialchars($lichtbehoefte_filter) . '</strong>';
@@ -324,7 +437,7 @@ function page_url(int $p): string {
                 <?php endforeach; ?>
 
                 <?php if (empty($plants)): ?>
-                    <p style="color:#666; padding:1rem 0;">
+                    <p class="geen-resultaten">
                         Geen planten gevonden met deze filters.
                     </p>
                 <?php endif; ?>
@@ -364,9 +477,9 @@ function page_url(int $p): string {
             </div>
 
             <div class="contact">
-                <p>email&nbsp;&nbsp;&nbsp;&nbsp;: contact@noraflora.com</p>
-                <p>telefoon&nbsp;: 0612345678</p>
-                <p>adres&nbsp;&nbsp;&nbsp;&nbsp;: Zwolle Pannekoekendijk420B</p>
+                <p><span class="contact-label">Email</span> contact@noraflora.com</p>
+                <p><span class="contact-label">Telefoon</span> 06 12 34 56 78</p>
+                <p><span class="contact-label">Adres</span> Pannekoekendijk 420B, Zwolle</p>
             </div>
 
         </div>
